@@ -105,7 +105,7 @@ namespace graphlogic
 
             // Set your scaling factor, could be a constant or based on the delta
             // Common practice is to make the scale factor per wheel delta increment (usually 120)
-            double scale = delta > 0 ? 1.1 : 0.9;
+            double scale = delta > 0 ? 1.05 : 0.95;
 
             foreach (UIElement child in MyCanvas.Children)
             {
