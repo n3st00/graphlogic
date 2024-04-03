@@ -239,7 +239,7 @@ namespace graphlogic
                     X = (1 - requestedScale) * centerPoint.X,
                     Y = (1 - requestedScale) * centerPoint.Y
                 };
-
+                //f
                 newTransformGroup.Children.Add(newScaleTransform);
                 newTransformGroup.Children.Add(newTranslateTransform);
                 element.RenderTransform = newTransformGroup;
