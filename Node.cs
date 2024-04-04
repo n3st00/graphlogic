@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 
 namespace graphlogic
 {
-    internal class Chain
+    internal class Node
     {
         public string name { get; set; }
-        public List<string> Connections { get; set; }
+        public string title { get; set; }
+        public string description { get; set; }
+        public List<string> connections { get; set; }
     }
 }

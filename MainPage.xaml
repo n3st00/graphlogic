@@ -15,10 +15,47 @@
                 Background="Transparent"
                 ManipulationMode="All"
                 PointerWheelChanged="MyCanvas_PointerWheelChanged">
-            <Ellipse Width="100"
-                     Height="75"
-                     HorizontalAlignment="Center"
-                     Fill="White"/>
+            
+            <Line X1="80" Y1="80"
+                  X2="150" Y2="150"
+                  Stroke="White"
+                  StrokeThickness="4"/>
+            <Button Width="100"
+                    Height="50"
+                    Click="Button_Click"
+                    Background="White"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"/>
+            <TextBox x:Name="NameTextBox"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Center"
+                     Margin="100"
+                     Background="White"
+                     Width="200"
+                     Height="50"/>
+            <TextBox x:Name="SecondTextBox"
+                     HorizontalAlignment="Right"
+                     VerticalAlignment="Center"
+                     Margin="150, 150, 0, 0"
+                     Background="Blue"
+                     Width="200"
+                     Height="30"/>
+            <Button Width="100"
+                    Height="50"
+                    Click="Button_Click_1"
+                    Content="Center the ellipse"
+                    Background="White"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Margin="150"/>
+            <Button Width="100"
+                    Height="50"
+                    Click="Button_Click_2"
+                    Content="Connect 2 points"
+                    Background="Aqua"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Margin="200, 200, 0, 0"/>
         </Canvas>
     </Grid>
 </Page>

@@ -13,6 +13,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
+using Windows.UI.Xaml.Shapes;
 
 // The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
@@ -21,15 +22,103 @@ namespace graphlogic
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
+    
+    
     public sealed partial class MainPage : Page
     {
+        public PointerEventHandler pointerPressedHandler;
+        PointerEventHandler pointerMovedHandler;
+        PointerEventHandler pointerReleasedHandler;
         public MainPage()
         {
             this.InitializeComponent();
             MyCanvas.ManipulationStarted += MyCanvas_ManipulationStarted;
             MyCanvas.ManipulationDelta += MyCanvas_ManipulationDelta;
             MyCanvas.ManipulationCompleted += MyCanvas_ManipulationCompleted;
+            GraphHelper.CreateNewPoint(MyCanvas, "point1",
+                                        Node_PointerPressed,
+                                        Node_PointerMoved,
+                                        Node_PointerReleased);
+            pointerPressedHandler = Node_PointerPressed;
+            pointerMovedHandler = Node_PointerMoved;
+            pointerReleasedHandler = Node_PointerReleased;
+            
+            foreach (UIElement node in MyCanvas.Children)
+            {
+                node.PointerPressed += Node_PointerPressed;
+                node.PointerMoved += Node_PointerMoved;
+                node.PointerReleased += Node_PointerReleased;
+            }
         }
+
+        public void Node_PointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            var node = sender as UIElement;
+            if (node != null)
+            {
+                isDragging = true;
+                selectedNode = node;
+                originalPosition = e.GetCurrentPoint(MyCanvas).Position;
+                node.CapturePointer(e.Pointer); // To track the pointer outside the element's bounds
+            }
+        
+        
+        }
+
+        private bool isDragging = false;
+        private UIElement selectedNode = null;
+        private Point originalPosition;
+
+
+
+
+        public void Node_PointerMoved(object sender, PointerRoutedEventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine("node_pointermoved outside IF is working");
+            if (isDragging && selectedNode != null)
+            {
+                System.Diagnostics.Debug.WriteLine("node_pointermoved IF is working");
+                var currentPosition = e.GetCurrentPoint(MyCanvas).Position;
+                var transform = selectedNode.RenderTransform as TranslateTransform;
+                if (transform == null)
+                {
+                    transform = new TranslateTransform();
+                    selectedNode.RenderTransform = transform;
+                }
+
+                // Move the node
+                transform.X += currentPosition.X - originalPosition.X;
+                transform.Y += currentPosition.Y - originalPosition.Y;
+
+                // Update the original position
+                originalPosition = currentPosition;
+
+                // Update connected edges
+/*                UpdateConnectedEdges(selectedNode, transform.X, transform.Y);
+*/            }
+        }
+
+        public void Node_PointerReleased(object sender, PointerRoutedEventArgs e)
+        {
+            if (isDragging)
+            {
+                var node = sender as UIElement;
+                node?.ReleasePointerCapture(e.Pointer);
+                isDragging = false;
+                selectedNode = null;
+            }
+        }
+
+        /*private void UpdateConnectedEdges(UIElement node, double offsetX, double offsetY)
+        {
+            // Assuming nodes and edges have been previously mapped
+            foreach (var edge in GetConnectedEdges(node))
+            {
+                // Update the position of the edge's start or end point depending on the node it's connected to.
+                // You'll need to implement GetConnectedEdges and a way to determine whether the node is at the start or end of the edge.
+            }
+        }*/
+
 
         private void MyCanvas_ManipulationStarted(object sender, ManipulationStartedRoutedEventArgs e)
         {
@@ -39,54 +128,17 @@ namespace graphlogic
 
         private void MyCanvas_ManipulationDelta(object sender, ManipulationDeltaRoutedEventArgs e)
         {
-            // Handle dragging logic
-            var translation = e.Delta.Translation;
-            foreach (UIElement child in MyCanvas.Children)
+            if (isDragging == false)
             {
-                double left = Canvas.GetLeft(child);
-                double top = Canvas.GetTop(child);
-
-                Canvas.SetLeft(child, left + translation.X);
-                Canvas.SetTop(child, top + translation.Y);
-            }
-
-            // Handle zooming logic
-            var scale = e.Delta.Scale;
-            if (Math.Abs(scale - 1.0) > Double.Epsilon) // Check if there is a meaningful scale change
-            {
+                // Handle dragging logic
+                var translation = e.Delta.Translation;
                 foreach (UIElement child in MyCanvas.Children)
                 {
-                    // Get the current left and top values again as they may have changed
                     double left = Canvas.GetLeft(child);
                     double top = Canvas.GetTop(child);
 
-                    // Initialize the transforms if they haven't been already
-                    if (child.RenderTransform as TransformGroup == null)
-                    {
-                        child.RenderTransform = new TransformGroup
-                        {
-                            Children = new TransformCollection
-                    {
-                        new ScaleTransform(),
-                        new TranslateTransform()
-                    }
-                        };
-                    }
-
-                    var transformGroup = (TransformGroup)child.RenderTransform;
-                    var scaleTransform = (ScaleTransform)transformGroup.Children[0];
-                    var translateTransform = (TranslateTransform)transformGroup.Children[1];
-
-                    // Calculate the new scale factor and apply it
-                    scaleTransform.ScaleX *= scale;
-                    scaleTransform.ScaleY *= scale;
-
-                    // Adjust the position to account for the new scale
-                    double newLeft = (left + translateTransform.X - MyCanvas.ActualWidth / 2) * scale + MyCanvas.ActualWidth / 2 - translateTransform.X;
-                    double newTop = (top + translateTransform.Y - MyCanvas.ActualHeight / 2) * scale + MyCanvas.ActualHeight / 2 - translateTransform.Y;
-
-                    Canvas.SetLeft(child, newLeft);
-                    Canvas.SetTop(child, newTop);
+                    Canvas.SetLeft(child, left + translation.X);
+                    Canvas.SetTop(child, top + translation.Y);
                 }
             }
         }
@@ -113,58 +165,6 @@ namespace graphlogic
                 ApplyScale(child, scale, pointerPoint.Position);
             }
         }
-
-        /*private void ApplyScale(UIElement element, double scale, Point centerPoint)
-        {
-            if (element.RenderTransform is TransformGroup transformGroup)
-            {
-                var scaleTransform = transformGroup.Children.OfType<ScaleTransform>().FirstOrDefault();
-                var translateTransform = transformGroup.Children.OfType<TranslateTransform>().FirstOrDefault();
-
-                if (scaleTransform == null)
-                {
-                    scaleTransform = new ScaleTransform();
-                    transformGroup.Children.Add(scaleTransform);
-                }
-
-                if (translateTransform == null)
-                {
-                    translateTransform = new TranslateTransform();
-                    transformGroup.Children.Add(translateTransform);
-                }
-
-                // Adjust the scale from the center of the pointer
-                scaleTransform.CenterX = centerPoint.X;
-                scaleTransform.CenterY = centerPoint.Y;
-                scaleTransform.ScaleX *= scale;
-                scaleTransform.ScaleY *= scale;
-
-                // Adjust the translate transform to account for the new scaling origin
-                translateTransform.X -= (centerPoint.X - translateTransform.X) * (scale - 1);
-                translateTransform.Y -= (centerPoint.Y - translateTransform.Y) * (scale - 1);
-            }
-            else
-            {
-                // Initialize the render transform if it does not exist
-                TransformGroup newTransformGroup = new TransformGroup();
-                ScaleTransform newScaleTransform = new ScaleTransform
-                {
-                    CenterX = centerPoint.X,
-                    CenterY = centerPoint.Y,
-                    ScaleX = scale,
-                    ScaleY = scale
-                };
-                TranslateTransform newTranslateTransform = new TranslateTransform
-                {
-                    X = (1 - scale) * centerPoint.X,
-                    Y = (1 - scale) * centerPoint.Y
-                };
-
-                newTransformGroup.Children.Add(newScaleTransform);
-                newTransformGroup.Children.Add(newTranslateTransform);
-                element.RenderTransform = newTransformGroup;
-            }
-        }*/
 
         private const double MinScale = 0.3; // Minimum zoom level
         private const double MaxScale = 5.0; // Maximum zoom level
@@ -244,6 +244,41 @@ namespace graphlogic
                 newTransformGroup.Children.Add(newTranslateTransform);
                 element.RenderTransform = newTransformGroup;
             }
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (UIElement child in MyCanvas.Children)
+            {
+                if (child is TextBox textBox && textBox.Name == "NameTextBox")
+                {
+                    GraphHelper.CreateNewPoint(MyCanvas, textBox.Text,
+                                                Node_PointerPressed, 
+                                                Node_PointerMoved,
+                                                Node_PointerReleased);
+                }
+            }
+            
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            foreach (UIElement child in MyCanvas.Children)
+            {
+                if (child is TextBox textBox && textBox.Name == "NameTextBox")
+                {
+                    GraphHelper.FindPoint(MyCanvas, textBox.Text);
+                }
+            }
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            TextBox fisttextbox = MyCanvas.Children.OfType<TextBox>()
+                              .FirstOrDefault(el => el.Name == "NameTextBox");
+            TextBox secondtextbox = MyCanvas.Children.OfType<TextBox>()
+                              .FirstOrDefault(el => el.Name == "SecondTextBox");
+            GraphHelper.ConnectPoints(MyCanvas, fisttextbox.Text, secondtextbox.Text);
         }
     }
 }
